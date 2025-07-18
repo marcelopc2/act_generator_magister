@@ -13,7 +13,7 @@ import time
 st.set_page_config(page_title="Magister Director ACT Generator", layout="wide", page_icon="🦉")
 st.title("Magister Director ACT Generator 🦉")
 st.info("Ingresa los IDs de cursos necesarios, pero en orden de dictación (c1, c2, c3, etc...). Se calcularán promedios, estado final y tareas pendientes.")
-
+st.info("Test")
 session = requests.Session()
 session.headers.update(HEADERS)
 
