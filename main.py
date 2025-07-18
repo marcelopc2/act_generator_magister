@@ -12,7 +12,7 @@ import time
 # Configuración general
 st.set_page_config(page_title="Magister Director ACT Generator", layout="wide", page_icon="🦉")
 st.title("Magister Director ACT Generator 🦉")
-st.info("Ingresa los de 1 a 6 IDs de cursos en orden de dictación (c1, c2, c3, etc...). Se calcularán promedios, estado final y tareas pendientes.")
+st.info("Ingresa los IDs de cursos necesarios, pero en orden de dictación (c1, c2, c3, etc...). Se calcularán promedios, estado final y tareas pendientes.")
 
 session = requests.Session()
 session.headers.update(HEADERS)
@@ -106,14 +106,14 @@ def obtener_info_curso_basica(cid):
         return None
 
 #INTERFAZ
-curso_input = st.text_area("IDs de cursos (separados por coma, espacio o salto de línea):", height=100)
-curso_ids = parse_course_ids(curso_input)[:6]
+curso_input = st.text_area("IDs de cursos (separados por coma, espacio o salto de línea):", height=200)
+curso_ids = parse_course_ids(curso_input)#[:6]
 NUM_COLS = [f"C{i}" for i in range(1, len(curso_ids)+1)] + ["Promedio"]
 
 if st.button("Obtener datos!", use_container_width=True):
     st.session_state["start_time"] = time.time()
-    if not (1 <= len(curso_ids) <= 6):
-        st.error("Debes ingresar entre 1 y 6 IDs de curso.")
+    if not (1 <= len(curso_ids) <= 20):
+        st.error("Ingresa todos los IDs de cursos del magister.")
         st.stop()
     
         # Obtener metadatos de cursos en paralelo
@@ -180,10 +180,15 @@ if st.button("Obtener datos!", use_container_width=True):
 
     filas = []
     for sis, info in alumnos.items():
+        # row = {
+        #     "Nombre": info["first"],
+        #     "Apellido": info["last"],
+        #     "RUT": format_rut(sis)
+        # }
+        nombre_completo = f"{info['first']} {info['last']}".strip()
         row = {
-            "Nombre": info["first"],
-            "Apellido": info["last"],
-            "RUT": format_rut(sis)
+            "Nombre Completo": nombre_completo,
+            "RUT": format_rut(sis) if sis else "Sin Rut"
         }
         notas = []
         pendiente = False
@@ -219,19 +224,20 @@ if st.button("Obtener datos!", use_container_width=True):
         else:
             row["Promedio"] = "Sin calcular"
 
-        missing = sum(1 for i in range(1, 6) if row[f"C{i}"] == "No existe")
+        missing = sum(1 for i in range(1, len(curso_ids)+1) if row.get(f"C{i}") == "No existe")
+
         if pendiente:
             row["Estado"] = "Pendiente"
         elif missing > 0:
             row["Estado"] = "Regularizar"
         elif row["Promedio"] == "Sin calcular":
             row["Estado"] = "Sin notas"
-        elif row["Promedio"] >= 4.0:
-            row["Estado"] = "Aprobado"
-        else:
+        elif any((isinstance(row.get(f"C{i}"), (int, float)) and row[f"C{i}"] < 4.0) for i in range(1, len(curso_ids)+1)):
             row["Estado"] = "Reprobado"
+        else:
+            row["Estado"] = "Aprobado"
 
-        row["Observaciones"] = "Accede a remedial" if reprobados == 1 else ""
+        row["Observaciones"] = ""
         row["Email"] = info["email"]
         filas.append(row)
 
